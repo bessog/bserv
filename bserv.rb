@@ -12,6 +12,8 @@ class BServApp < Sinatra::Base
     db = Mongo::MongoClient.new("localhost", 27017).db('local-bserv')
   end
 
+  coll = db.collection('Banners')
+
   not_found { erb :'404'}
 
   time = Time.new
@@ -19,13 +21,23 @@ class BServApp < Sinatra::Base
   time_id = BSON::ObjectId.from_time(timeutc)
 
   get '/gb/:where/?:test?/?:ip?' do
-    coll = db.collection("GeoipBannerCollection")
-    coll.ensure_index({"loc" => "2dsphere" })
+    #coll.ensure_index({"loc" => "2dsphere" })
     if params[:ip].is_a? String then client_ip = params[:ip]
     else client_ip = request.ip end
+    ipA = client_ip.split('.')
+    ipInt = 16777216 * ipA[0].to_i + 65536 * ipA[1].to_i + 256 * ipA[2].to_i + ipA[3].to_i
 
-    client_location = GeoIP.new("GeoLiteCity.dat").city(client_ip)
+    coll = db.collection("GeoLiteCity")
+    query = { "$and" => [
+      { "startIpNum" => { "$lte" =>  ipInt }},
+      { "endIpNum" => { "$gte" =>  ipInt }}
+    ]}
+    rb=coll.find_one(query).to_a
 
+    query = { "_id" => rb[3][1] }
+    rl=coll.find_one(query).to_a
+
+    coll = db.collection("Banners")
     query = {
       "_id" => {
         "$lt" => time_id
@@ -35,8 +47,8 @@ class BServApp < Sinatra::Base
           "$geometry" => {
             "type" => "Point",
             "coordinates" => [ 
-              client_location[:longitude],
-              client_location[:latitude]
+              rl[6][1],
+              rl[5][1]
             ]
           }
         },
@@ -52,7 +64,7 @@ class BServApp < Sinatra::Base
   end
 
   get '/bn/:where/?:short?/?:test?' do
-    coll = db.collection("GenericBannerCollection")
+    coll = db.collection("Banners")
     if(params[:short].nil?) then short = 'default' else short = params[:short] end
 
     query = {
