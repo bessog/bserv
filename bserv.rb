@@ -1,8 +1,7 @@
 class BServApp < Sinatra::Base
-  set :show_exceptions, false
-  #set :views, File.join(File.dirname(__FILE__), 'views/bserv')
-  set :views, 'views/bserv'
-  set :public_folder, 'public/bserv'
+  set :show_exceptions, true
+  set :views, File.join(File.dirname(__FILE__), 'views')
+  set :public_folder, File.join(File.dirname(__FILE__), 'public')
   
   if ENV['VCAP_SERVICES'] then
     #puts "Running on CloudFoundry"
@@ -14,7 +13,7 @@ class BServApp < Sinatra::Base
 
   coll = db.collection('Banners')
 
-  not_found { erb :'404'}
+  not_found { haml :'404'}
 
   time = Time.new
   timeutc = time.utc()
@@ -57,10 +56,9 @@ class BServApp < Sinatra::Base
     }
 
     row = coll.find(query).to_a
-    show = row[rand(row.length)]
-
-    puts show
-    #erb :index
+    @show = row[rand(row.length)]
+#puts @show
+    haml :banner
   end
 
   get '/bn/:where/?:short?/?:test?' do
@@ -74,10 +72,9 @@ class BServApp < Sinatra::Base
       "short" => params[:short]
     }
 
-    show = coll.find_one(query)
-    puts show
+    @show = coll.find_one(query)
 
-    #erb :index
+    haml :banner
   end  
 
 end

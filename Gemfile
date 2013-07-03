@@ -1,4 +1,4 @@
-source :rubygems
+source 'http://rubygems.org'
 
 gem 'geoip'
 gem 'geokit'
@@ -9,6 +9,7 @@ gem 'sinatra'
 gem 'json'
 gem 'bson_ext'
 gem 'mongo'
+gem 'haml'
 
 # just in case
 gem 'httpclient'
@@ -21,3 +22,4 @@ gem 'httpclient'
 group :test do
   gem 'rack-test'
 end
+
