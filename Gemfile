@@ -1,9 +1,7 @@
 source 'http://rubygems.org'
 
-gem 'geoip'
-gem 'geokit'
+gem 'cf-runtime'
 gem 'rack'
-gem 'rack-geoip'
 gem 'thin'
 gem 'sinatra'
 gem 'json'
