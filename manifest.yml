@@ -1,0 +1,13 @@
+---
+applications:
+- name: bserv
+  memory: 256M
+  instances: 1
+  url: bserv.cfapps.io
+  path: .
+  services:
+    mongolab-bserv:
+      label: mongolab
+      provider: mongolab
+      version: n/a
+      plan: sandbox
