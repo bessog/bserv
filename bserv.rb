@@ -4,35 +4,40 @@ class BServApp < Sinatra::Base
   set :public_folder, File.join(File.dirname(__FILE__), 'public')
   
   if ENV['VCAP_SERVICES'] then
-    #puts "Running on CloudFoundry"
+    #connection = CFRuntime::MongoClient.create_from_svc('mongolab-bserv')
+    #db = connection.db
     db = CFRuntime::MongoClient.create_from_svc 'mongolab-bserv'
   else
     puts "Running local"
     db = Mongo::MongoClient.new("localhost", 27017).db('local-bserv')
   end
 
-  coll = db.collection('Banners')
 
-  not_found { haml :'404'}
+  not_found { haml :error404 }
 
   time = Time.new
   timeutc = time.utc()
   time_id = BSON::ObjectId.from_time(timeutc)
 
   get '/gb/:where/?:test?/?:ip?' do
-    #coll.ensure_index({"loc" => "2dsphere" })
+
     if params[:ip].is_a? String then client_ip = params[:ip]
     else client_ip = request.ip end
+
     ipA = client_ip.split('.')
     ipInt = 16777216 * ipA[0].to_i + 65536 * ipA[1].to_i + 256 * ipA[2].to_i + ipA[3].to_i
 
-    coll = db.collection("GeoLiteCity")
-    query = { "$and" => [
-      { "startIpNum" => { "$lte" =>  ipInt }},
-      { "endIpNum" => { "$gte" =>  ipInt }}
-    ]}
-    rb=coll.find_one(query).to_a
+    coll = db.collection("GeoLiteCity-Blocks")
 
+    query = { "$query" => {"startIpNum" => { "$lte" =>  ipInt }}, "$orderby" => { "startIpNum" => -1 } } 
+#puts coll.find(query).explain()
+#begin_t = Time.now
+    rb=coll.find_one(query).to_a
+#end_t = Time.now
+#puts "time #{(end_t - begin_t)*1000} milliseconds"
+
+
+    coll = db.collection("GeoLiteCity-Location")
     query = { "_id" => rb[3][1] }
     rl=coll.find_one(query).to_a
 
@@ -54,10 +59,15 @@ class BServApp < Sinatra::Base
         "$maxDistance" => 200000
       }
     }
-
+#puts coll.find(query).explain()
+#begin_t = Time.now
     row = coll.find(query).to_a
-    @show = row[rand(row.length)]
-#puts @show
+#end_t = Time.now
+#puts "time #{(end_t - begin_t)*1000} milliseconds"
+
+    if row.length > 0 then @show = row[rand(row.length)]
+    else @show = {"message" => 'none found'} end
+
     haml :banner
   end
 
