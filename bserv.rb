@@ -1,17 +1,20 @@
 class BServApp < Sinatra::Base
+
   set :show_exceptions, true
-  set :views, File.join(File.dirname(__FILE__), 'views')
-  set :public_folder, File.join(File.dirname(__FILE__), 'public')
+  set :views, 'views'
+  set :public_folder, 'public'
   
+  dbyml = YAML.load_file('database.yml')
+
   if ENV['VCAP_SERVICES'] then
-    #connection = CFRuntime::MongoClient.create_from_svc('mongolab-bserv')
-    #db = connection.db
-    db = CFRuntime::MongoClient.create_from_svc 'mongolab-bserv'
+    dbconf = dbyml["cloudfoundry"]
   else
     puts "Running local"
-    db = Mongo::MongoClient.new("localhost", 27017).db('local-bserv')
+    dbconf = dbyml["local"] 
   end
 
+  db = Mongo::MongoClient.new(dbconf["host"], dbconf["port"]).db(dbconf["database"])
+  if !dbconf["password"].nil? then auth = db.authenticate(dbconf["username"], dbconf["password"]) end
 
   not_found { haml :error404 }
 
@@ -20,6 +23,8 @@ class BServApp < Sinatra::Base
   time_id = BSON::ObjectId.from_time(timeutc)
 
   get '/gb/:where/?:test?/?:ip?' do
+
+begin_t = Time.now
 
     if params[:ip].is_a? String then client_ip = params[:ip]
     else client_ip = request.ip end
@@ -36,37 +41,42 @@ class BServApp < Sinatra::Base
 #end_t = Time.now
 #puts "time #{(end_t - begin_t)*1000} milliseconds"
 
+    @show = {}
 
-    coll = db.collection("GeoLiteCity-Location")
-    query = { "_id" => rb[3][1] }
-    rl=coll.find_one(query).to_a
-
-    coll = db.collection("Banners")
-    query = {
-      "_id" => {
-        "$lt" => time_id
-      }, 
-     "loc" => {
-        "$near" => {
-          "$geometry" => {
-            "type" => "Point",
-            "coordinates" => [ 
-              rl[6][1],
-              rl[5][1]
-            ]
-          }
-        },
-        "$maxDistance" => 200000
+    if rb.any? then
+      coll = db.collection("GeoLiteCity-Location")
+      query = { "_id" => rb[3][1] }
+      rl=coll.find_one(query).to_a
+  
+      coll = db.collection("Banners")
+      query = {
+        "_id" => {
+          "$lt" => time_id
+        }, 
+       "loc" => {
+          "$near" => {
+            "$geometry" => {
+              "type" => "Point",
+              "coordinates" => [ 
+                rl[6][1],
+                rl[5][1]
+              ]
+            }
+          },
+          "$maxDistance" => 200000
+        }
       }
-    }
 #puts coll.find(query).explain()
 #begin_t = Time.now
-    row = coll.find(query).to_a
+      row = coll.find(query).to_a
 #end_t = Time.now
 #puts "time #{(end_t - begin_t)*1000} milliseconds"
+      if row.length > 0 then @show = row[rand(row.length)]
+      else @show["message"] = "none found" end
+    else @show["message"] = "none found" end
 
-    if row.length > 0 then @show = row[rand(row.length)]
-    else @show = {"message" => 'none found'} end
+end_t = Time.now
+@show["Banner generated in "] = " #{(end_t - begin_t)*1000} milliseconds"
 
     haml :banner
   end

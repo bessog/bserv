@@ -1,0 +1,12 @@
+local:
+  host: localhost
+  port: 27017
+  database: local-bserv
+
+
+cloudfoundry:
+  host: #mongolab host
+  port: #mongolab port
+  database: #mongolab database
+  username: #mongolab username
+  password: #mongolab password
