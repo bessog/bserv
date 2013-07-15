@@ -22,6 +22,10 @@ class BServApp < Sinatra::Base
   timeutc = time.utc()
   time_id = BSON::ObjectId.from_time(timeutc)
 
+  get '/' do
+    redirect '/gb/ww/1'
+  end
+
   get '/gb/:where/?:test?/?:ip?' do
 
 begin_t = Time.now
