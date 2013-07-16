@@ -43,6 +43,8 @@ begin_t = Time.now
 
     @show = {}
 
+    @show["client ip "] = client_ip
+
     if rb.any? then
       coll = db.collection("GeoLiteCity-Location")
       query = { "_id" => rb[3][1] }
