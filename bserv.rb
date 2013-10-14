@@ -7,81 +7,81 @@ class BServApp < Sinatra::Base
   dbyml = YAML.load_file('database.yml')
 
   if ENV['VCAP_SERVICES'] then
+    @debug = false
     dbconf = dbyml["cloudfoundry"]
   else
+    @debug = false
     puts "Running local"
-    dbconf = dbyml["local"] 
+    dbconf = dbyml["local"]
   end
 
   db = Mongo::MongoClient.new(dbconf["host"], dbconf["port"]).db(dbconf["database"])
   if !dbconf["password"].nil? then auth = db.authenticate(dbconf["username"], dbconf["password"]) end
 
-  not_found { haml :error404 }
-
-  time = Time.new
-  timeutc = time.utc()
-  time_id = BSON::ObjectId.from_time(timeutc)
+  not_found { erb :error404 }
 
   get '/gb/:where/?:test?/?:ip?' do
 
-begin_t = Time.now
+    if @debug then begin_t = Time.now end
 
     if params[:ip].is_a? String then client_ip = params[:ip]
     else client_ip = request.ip end
+#client_ip='192.237.220.75'
 
-    ipA = client_ip.split('.')
-    ipInt = 16777216 * ipA[0].to_i + 65536 * ipA[1].to_i + 256 * ipA[2].to_i + ipA[3].to_i
+    rl = GeoIP.new('GeoLiteCity.dat').city(client_ip)
 
-    coll = db.collection("GeoLiteCity-Blocks")
-
-    query = { "$query" => {"startIpNum" => { "$lte" =>  ipInt }}, "$orderby" => { "startIpNum" => -1 } } 
-#puts coll.find(query).explain()
-#begin_t = Time.now
-    rb=coll.find_one(query).to_a
-#end_t = Time.now
-#puts "time #{(end_t - begin_t)*1000} milliseconds"
+#puts rl
 
     @show = {}
 
-    @show["client ip "] = client_ip
+    if @debug then @show["client ip "] = client_ip end
 
-    if rb.any? then
-      coll = db.collection("GeoLiteCity-Location")
-      query = { "_id" => rb[3][1] }
-      rl=coll.find_one(query).to_a
-  
-      coll = db.collection("Banners")
-      query = {
-        "_id" => {
-          "$lt" => time_id
-        }, 
-       "loc" => {
-          "$near" => {
-            "$geometry" => {
-              "type" => "Point",
-              "coordinates" => [ 
-                rl[6][1],
-                rl[5][1]
-              ]
-            }
-          },
-          "$maxDistance" => 200000
-        }
+#=begin
+    coll = db.collection("Styles")
+    query = {}
+    css = coll.find_one(query)
+    @show["css"] = css["css"]
+#=end
+
+    if @debug then @show["client location "] = rl end
+
+    coll = db.collection("Banners")
+
+    query = {
+      "end_date" => { "$gt" => Time.now.utc },
+      "active" => "YES",
+      "loc" => {
+        "$near" => {
+          "$geometry" => {
+            "type" => "Point",
+            "coordinates" => [ 
+              rl.longitude,
+              rl.latitude
+            ]
+          }
+        },
+        "$maxDistance" => 200000
       }
-#puts coll.find(query).explain()
-#begin_t = Time.now
-      row = coll.find(query).to_a
-#end_t = Time.now
-#puts "time #{(end_t - begin_t)*1000} milliseconds"
-      if row.length > 0 then @show = row[rand(row.length)]
-      else @show["message"] = "none found" end
-    else @show["message"] = "none found" end
+    }
 
-end_t = Time.now
-@show["Banner generated in "] = " #{(end_t - begin_t)*1000} milliseconds"
+    if @debug then @show["query"] = query end
+    @show["banner"] = {}
 
-    haml :banner
-  end
+    #if @debug then @show["explain"] = coll.find(query).explain() end
+    #if @debug then begin_qt = Time.now end
+    row = coll.find(query).to_a
+    #if @debug then end_qt = Time.now end
+    #if @debug then @show["query time"] = "time #{(end_qt - begin_qt)*1000} milliseconds" end
+    if row.length > 0 then @show['banner'] = row[rand(row.length)]
+    else @show["banner"]["body"] = "none found" end
+
+    if @debug then 
+      end_t = Time.now
+      @show["Banner generated in "] = " #{(end_t - begin_t)*1000} milliseconds"
+    end
+
+  erb :banner
+end
 
   get '/bn/:where/?:short?/?:test?' do
     coll = db.collection("Banners")

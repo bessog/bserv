@@ -1,4 +1,5 @@
 source 'http://rubygems.org'
+ruby "1.9.3"
 
 gem 'cf-runtime'
 gem 'rack'
@@ -7,6 +8,7 @@ gem 'sinatra'
 gem 'json'
 gem 'bson_ext'
 gem 'mongo'
+gem 'geoip'
 gem 'haml'
 
 # just in case

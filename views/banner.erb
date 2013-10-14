@@ -1,0 +1,9 @@
+<%= @show["css"] %>
+<%= @show["banner"]["body"] %>
+<% if @debug then %>
+<pre>
+  <% for @item in @show %>
+    <%= @item %>
+  <% end %>
+</pre>
+<% end %>

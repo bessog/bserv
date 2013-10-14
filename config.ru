@@ -3,7 +3,9 @@ require 'cf-runtime'
 require 'sinatra'
 require 'sinatra/base'
 require 'mongo'
-require 'haml'
+require 'geoip'
+#require 'haml'
+require 'erb'
 require './bserv'
 
 map '/' do
