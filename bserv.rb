@@ -26,22 +26,17 @@ class BServApp < Sinatra::Base
 
     if params[:ip].is_a? String then client_ip = params[:ip]
     else client_ip = request.ip end
-#client_ip='192.237.220.75'
 
     rl = GeoIP.new('GeoLiteCity.dat').city(client_ip)
-
-#puts rl
 
     @show = {}
 
     if @debug then @show["client ip "] = client_ip end
 
-#=begin
     coll = db.collection("Styles")
     query = {}
     css = coll.find_one(query)
     @show["css"] = css["css"]
-#=end
 
     if @debug then @show["client location "] = rl end
 
@@ -67,11 +62,12 @@ class BServApp < Sinatra::Base
     if @debug then @show["query"] = query end
     @show["banner"] = {}
 
-    #if @debug then @show["explain"] = coll.find(query).explain() end
+    if @debug then @show["explain"] = coll.find(query).explain() end
     #if @debug then begin_qt = Time.now end
     row = coll.find(query).to_a
     #if @debug then end_qt = Time.now end
     #if @debug then @show["query time"] = "time #{(end_qt - begin_qt)*1000} milliseconds" end
+
     if row.length > 0 then @show['banner'] = row[rand(row.length)]
     else @show["banner"]["body"] = "none found" end
 
@@ -80,8 +76,8 @@ class BServApp < Sinatra::Base
       @show["Banner generated in "] = " #{(end_t - begin_t)*1000} milliseconds"
     end
 
-  erb :banner
-end
+    erb :banner
+  end
 
   get '/bn/:where/?:short?/?:test?' do
     coll = db.collection("Banners")
@@ -96,7 +92,7 @@ end
 
     @show = coll.find_one(query)
 
-    haml :banner
+    erb :banner
   end  
 
 end
