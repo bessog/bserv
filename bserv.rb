@@ -22,6 +22,8 @@ class BServApp < Sinatra::Base
 
   get '/gb/:where/?:test?/?:ip?' do
 
+    if params[:test] then @debug = true end
+
     if @debug then begin_t = Time.now end
 
     if params[:ip].is_a? String then client_ip = params[:ip]
@@ -35,7 +37,7 @@ class BServApp < Sinatra::Base
 
     coll = db.collection("Styles")
     query = {}
-    css = coll.find_one(query)
+    css = coll.find_one({"site" => params[:where]})
     @show["css"] = css["css"]
 
     if @debug then @show["client location "] = rl end
@@ -44,7 +46,7 @@ class BServApp < Sinatra::Base
 
     query = {
       "end_date" => { "$gt" => Time.now.utc },
-      "active" => "YES",
+      "active" => true,
       "loc" => {
         "$near" => {
           "$geometry" => {
