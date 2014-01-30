@@ -5,6 +5,7 @@ class BServApp < Sinatra::Base
   set :public_folder, 'public'
   
   dbyml = YAML.load_file('database.yml')
+  defaults = YAML.load_file('defaults.yml')
 
   if ENV['VCAP_SERVICES'] then
     @debug = false
@@ -20,58 +21,79 @@ class BServApp < Sinatra::Base
 
   not_found { erb :error404 }
 
-  get '/gb/:where/?:test?/?:ip?' do
+  get '/gb/:site/?:test?/?:ip?' do
+
+    defaultbanner = true
+    @show = {}
+    @show["banner"] = {}
 
     if params[:test] then @debug = true end
 
     if @debug then begin_t = Time.now end
 
-    if params[:ip].is_a? String then client_ip = params[:ip]
+    if params[:ip] then client_ip = params[:ip]
     else client_ip = request.ip end
-
-    rl = GeoIP.new('GeoLiteCity.dat').city(client_ip)
-
-    @show = {}
 
     if @debug then @show["client ip "] = client_ip end
 
+    rl = GeoIP.new('GeoLiteCity.dat').city(client_ip)
+    if @debug then @show["client location "] = rl.to_a end
+
+    if params[:site] then site = params[:site]
+    else site = defaults['site'] end
     coll = db.collection("Styles")
     query = {}
-    css = coll.find_one({"site" => params[:where]})
+    css = coll.find_one({"site" => site})
     @show["css"] = css["css"]
-
-    if @debug then @show["client location "] = rl end
 
     coll = db.collection("Banners")
 
-    query = {
-      "end_date" => { "$gt" => Time.now.utc },
-      "active" => true,
-      "loc" => {
-        "$near" => {
-          "$geometry" => {
-            "type" => "Point",
-            "coordinates" => [ 
-              rl.longitude,
-              rl.latitude
-            ]
-          }
-        },
-        "$maxDistance" => 200000
+    if defined? rl.longitude then 
+      defaultbanner = false
+
+      query = {
+        "end_date" => { "$gt" => Time.now.utc },
+        "active" => true,
+        "type" => defaults['type'],
+        "loc" => {
+          "$near" => {
+            "$geometry" => {
+              "type" => "Point",
+              "coordinates" => [ 
+                rl.longitude,
+                rl.latitude
+              ]
+            }
+          },
+          "$maxDistance" => 200000
+        }
       }
-    }
 
-    if @debug then @show["query"] = query end
-    @show["banner"] = {}
+      if @debug then @show["query"] = query end
 
-    if @debug then @show["explain"] = coll.find(query).explain() end
-    #if @debug then begin_qt = Time.now end
-    row = coll.find(query).to_a
-    #if @debug then end_qt = Time.now end
-    #if @debug then @show["query time"] = "time #{(end_qt - begin_qt)*1000} milliseconds" end
+      if @debug then @show["explain"] = coll.find(query).explain() end
+      if @debug then begin_qt = Time.now end
+      row = coll.find(query).to_a
+      if @debug then end_qt = Time.now end
+      if @debug then @show["query time"] = "time #{(end_qt - begin_qt)*1000} milliseconds" end
 
-    if row.length > 0 then @show['banner'] = row[rand(row.length)]
-    else @show["banner"]["body"] = "none found" end
+      if row.length < 1 then defaultbanner = true end
+    end
+
+    if defaultbanner then
+      query = {
+        "end_date" => { "$gt" => Time.now.utc },
+        "active" => true,
+        "type" => defaults['type'],
+        "fields.city" => defaults['city']
+      }
+      if @debug then begin_2qt = Time.now end
+      row = coll.find(query).to_a
+      if @debug then end_2qt = Time.now end
+      if @debug then @show["2nd query time"] = "time #{(end_2qt - begin_2qt)*1000} milliseconds" end
+    end
+
+    @show["banner"] =  row[rand(row.length)]
 
     if @debug then 
       end_t = Time.now
@@ -81,7 +103,7 @@ class BServApp < Sinatra::Base
     erb :banner
   end
 
-  get '/bn/:where/?:short?/?:test?' do
+  get '/bn/:site/?:short?/?:test?' do
     coll = db.collection("Banners")
     if(params[:short].nil?) then short = 'default' else short = params[:short] end
 
