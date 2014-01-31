@@ -1,3 +1,4 @@
 type: #default banner type
 site: #default site: www.example.com
 city: #default city
+gaaccount: #google analytics account: UA-XXXXXXX-YY
