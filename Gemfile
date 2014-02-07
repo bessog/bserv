@@ -10,6 +10,7 @@ gem 'bson_ext'
 gem 'mongo'
 gem 'geoip'
 gem 'haml'
+gem 'newrelic_rpm'
 
 # just in case
 gem 'httpclient'

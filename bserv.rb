@@ -26,6 +26,8 @@ class BServApp < Sinatra::Base
     defaultbanner = true
     @show = {}
     @show["banner"] = {}
+    @debug = false
+    @test = false
 
     if params[:test] == "2" then @debug = true
     elsif params[:test] == "1" then @test = true end
@@ -119,6 +121,8 @@ gaPiAd(\'create\', \'" + defaults['gaaccount'] + "\', \'none\');
 gaPiAd(\'send\', \'event\', \'Impression\', \'" + fields['title'].to_s + " - " + js_date + " - " + fields['city'].to_s + "\', location.href);
 var gaPiAdClick_" + fields['class_id'].to_s + " = function() { gaPiAd(\'send\', \'event\', \'Click\', \'" + fields['title'].to_s + " - " + js_date + " - " + fields['city'].to_s + "\', location.href) };
 </script>"
+
+    if !@debug && !@test then headers['Content-Type'] = 'application/javascript' end
 
     if @debug then
       erb :banner
