@@ -47,7 +47,7 @@ class BServApp < Sinatra::Base
     coll = db.collection("Styles")
     query = {}
     css = coll.find_one({"site" => site})
-    @show["css"] = "<style>" + css["css"] + "</style>"
+    @show["css"] = css["css"]
 
     coll = db.collection("Banners")
 
@@ -112,7 +112,7 @@ class BServApp < Sinatra::Base
 
     js_date = DateTime.parse(fields['start_date'].to_s).strftime('%-d %b %Y')
 
-    gaPiAd = "<script>
+    gaPiAd = "
 (function(i,s,o,g,r,a,m){i[\'GoogleAnalyticsObject\']=r;i[r]=i[r]||function(){
 (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
 m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
@@ -120,17 +120,55 @@ m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
 gaPiAd(\'create\', \'" + defaults['gaaccount'] + "\', \'none\');
 gaPiAd(\'send\', \'event\', \'Impression\', \'" + fields['title'].to_s + " - " + js_date + " - " + fields['city'].to_s + "\', location.href);
 var gaPiAdClick_" + fields['class_id'].to_s + " = function() { gaPiAd(\'send\', \'event\', \'Click\', \'" + fields['title'].to_s + " - " + js_date + " - " + fields['city'].to_s + "\', location.href) };
-</script>"
+"
 
     if !@debug && !@test then headers['Content-Type'] = 'application/javascript' end
 
     if @debug then
       erb :banner
     elsif @test then
-      "<script>document.write(unescape('" + CGI.escape(gaPiAd + @show['css'] + @show['banner']['body']).gsub("+", "%20") + "'));</script>"
+"<div class='PivotalAdBannerDiv'></div>
+<script>
+gapiAds = document.getElementsByClassName('PivotalAdBannerDiv');
+for(i=0; i<gapiAds.length; i++) {
+  s = document.createElement('script');
+  s.type = 'text/javascript';
+  s.text = '" + gaPiAd.gsub("\n"," ").gsub("'","\\\\'") +"';
+  gapiAds[i].parentNode.insertBefore(s,gapiAds[i]);
+  c = document.createElement('style');
+  c.innerHTML = '" + @show['css'].gsub("\n"," ").gsub("'","\\\\'") + "';
+  document.head.appendChild(c);
+  gapiAds[i].innerHTML='" + @show['banner']['body'].gsub("\n"," ").gsub("'","\\\\'") + "';
+}
+</script>"
     else
-      "document.write(unescape('" + CGI.escape(gaPiAd + @show['css'] + @show['banner']['body']).gsub("+", "%20") + "'));"
+"gapiAds = document.getElementsByClassName('PivotalAdBannerDiv');
+for(i=0; i<gapiAds.length; i++) {
+  s = document.createElement('script');
+  s.type = 'text/javascript';
+  s.text = '" + gaPiAd.gsub("\n"," ").gsub("'","\\\\'") +"';
+  gapiAds[i].parentNode.insertBefore(s,gapiAds[i]);
+  c = document.createElement('style');
+  c.innerHTML = '" + @show['css'].gsub("\n"," ").gsub("'","\\\\'") + "';
+  document.head.appendChild(c);
+  gapiAds[i].innerHTML='" + @show['banner']['body'].gsub("\n"," ").gsub("'","\\\\'") + "';
+}"
     end
+
+=begin
+# async banner loader
+<div class='PivotalAdBannerDiv'></div>
+<script>
+(function() {
+    var s = document.createElement('script');
+    s.type = 'text/javascript';
+    s.async = true;
+    s.src = 'http://example.com/gb/site.com';
+    var x = document.getElementsByTagName('script')[0];
+    x.parentNode.insertBefore(s, x);
+})();
+</script>
+=end
 
   end
 
