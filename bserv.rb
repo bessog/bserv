@@ -118,8 +118,8 @@ class BServApp < Sinatra::Base
 m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
 })(window,document,\'script\',\'//www.google-analytics.com/analytics.js\',\'gaPiAd\');
 gaPiAd(\'create\', \'" + defaults['gaaccount'] + "\', \'none\');
-gaPiAd(\'send\', \'event\', \'Impression\', \'" + fields['title'].to_s + " - " + js_date + " - " + fields['city'].to_s + "\', location.href);
-var gaPiAdClick_" + fields['class_id'].to_s + " = function() { gaPiAd(\'send\', \'event\', \'Click\', \'" + fields['title'].to_s + " - " + js_date + " - " + fields['city'].to_s + "\', location.href) };
+gaPiAd(\'send\', \'event\', \'Impression\', \'" + @show["banner"]["adname"] + "\', location.href);
+var gaPiAdClick_" + fields['class_id'].to_s + " = function() { gaPiAd(\'send\', \'event\', \'Click\', \'" + @show["banner"]["adname"] + "\', location.href) };
 "
 
     if !@debug && !@test then headers['Content-Type'] = 'application/javascript' end
