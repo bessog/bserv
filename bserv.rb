@@ -42,34 +42,42 @@ class BServApp < Sinatra::Base
     rl = GeoIP.new('GeoLiteCity.dat').city(client_ip)
     if @debug then @show["client location "] = rl.to_a end
 
-    if params[:site] then site = params[:site]
-    else site = defaults['site'] end
-    coll = db.collection("Styles")
-    query = {}
-    css = coll.find_one({"site" => site})
-    @show["css"] = css["css"]
+    if params[:site] then paramsite = params[:site]
+    else paramsite = defaults['site'] end
+    coll = db.collection("Sites")
+
+    query = {
+        "end_date" => { "$gt" => Time.now.utc },
+        "active" => true,
+        "type" => defaults['type']
+    }
+
+    site = coll.find_one({"site" => paramsite})
+
+    if site["filter"] then
+      YAML.load(site["filter"]).each do |k,v|
+        query[k] = v
+      end
+    end
+    
+    @show["css"] = site["css"]
 
     coll = db.collection("Banners")
 
     if defined? rl.longitude then 
       defaultbanner = false
 
-      query = {
-        "end_date" => { "$gt" => Time.now.utc },
-        "active" => true,
-        "type" => defaults['type'],
-        "loc" => {
-          "$near" => {
-            "$geometry" => {
-              "type" => "Point",
-              "coordinates" => [ 
-                rl.longitude,
-                rl.latitude
-              ]
-            }
-          },
-          "$maxDistance" => 200000
-        }
+      query["loc"] = {
+        "$near" => {
+          "$geometry" => {
+            "type" => "Point",
+            "coordinates" => [ 
+              rl.longitude,
+              rl.latitude
+            ]
+          }
+        },
+        "$maxDistance" => 200000
       }
 
       if @debug then
@@ -87,12 +95,8 @@ class BServApp < Sinatra::Base
     end
 
     if defaultbanner then
-      query = {
-        "end_date" => { "$gt" => Time.now.utc },
-        "active" => true,
-        "type" => defaults['type'],
-        "fields.city" => defaults['city']
-      }
+      query["fields.city"] = defaults['city']
+
       if @debug then begin_2qt = Time.now end
       row = coll.find(query).to_a
       if @debug then
