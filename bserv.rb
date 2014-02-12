@@ -91,7 +91,10 @@ class BServApp < Sinatra::Base
         @show["query time"] = "time #{(end_qt - begin_qt)*1000} milliseconds"
       end
 
-      if row.length < 1 then defaultbanner = true end
+      if row.length < 1 then 
+        defaultbanner = true
+        query.delete("loc")
+      end
     end
 
     if defaultbanner then
@@ -104,17 +107,26 @@ class BServApp < Sinatra::Base
         @show["2nd query time"] = "time #{(end_2qt - begin_2qt)*1000} milliseconds"
       end
     end
+    @show["banner"] = row[rand(row.length-1)]
 
-    @show["banner"] = row[rand(row.length)]
-    fields = @show["banner"]["fields"]
+    if @show["banner"] then
+      fields = @show["banner"]["fields"]
+    else
+
+      fbquery = {}
+      defaults["gbfallback"].each do |k,v|
+        fbquery[k] = v.to_s
+      end
+      row = coll.find(fbquery).to_a
+      @show["banner"] = row[0]
+      fields = @show["banner"]["fields"]
+    end
 
     if @debug then 
       end_t = Time.now
       @show["fields: "] = fields['title']
       @show["Banner generated in "] = " #{(end_t - begin_t)*1000} milliseconds"
     end
-
-    js_date = DateTime.parse(fields['start_date'].to_s).strftime('%-d %b %Y')
 
     gaPiAd = "
 (function(i,s,o,g,r,a,m){i[\'GoogleAnalyticsObject\']=r;i[r]=i[r]||function(){
@@ -128,25 +140,7 @@ var gaPiAdClick_" + fields['class_id'].to_s + " = function() { gaPiAd(\'send\', 
 
     if !@debug && !@test then headers['Content-Type'] = 'application/javascript' end
 
-    if @debug then
-      erb :banner
-    elsif @test then
-"<div class='PivotalAdBannerDiv'></div>
-<script>
-gapiAds = document.getElementsByClassName('PivotalAdBannerDiv');
-for(i=0; i<gapiAds.length; i++) {
-  s = document.createElement('script');
-  s.type = 'text/javascript';
-  s.text = '" + gaPiAd.gsub("\n"," ").gsub("'","\\\\'") +"';
-  gapiAds[i].parentNode.insertBefore(s,gapiAds[i]);
-  c = document.createElement('style');
-  c.innerHTML = '" + @show['css'].gsub("\n"," ").gsub("'","\\\\'") + "';
-  document.head.appendChild(c);
-  gapiAds[i].innerHTML='" + @show['banner']['body'].gsub("\n"," ").gsub("'","\\\\'") + "';
-}
-</script>"
-    else
-"gapiAds = document.getElementsByClassName('PivotalAdBannerDiv');
+    output = "gapiAds = document.getElementsByClassName('PivotalAdBannerDiv');
 for(i=0; i<gapiAds.length; i++) {
   s = document.createElement('script');
   s.type = 'text/javascript';
@@ -157,6 +151,14 @@ for(i=0; i<gapiAds.length; i++) {
   document.head.appendChild(c);
   gapiAds[i].innerHTML='" + @show['banner']['body'].gsub("\n"," ").gsub("'","\\\\'") + "';
 }"
+
+    if @debug then
+      erb :banner
+    elsif @test then
+"<div class='PivotalAdBannerDiv'></div>
+<script>" + output + "</script>"
+    else
+      output
     end
 
 =begin
