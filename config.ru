@@ -1,3 +1,5 @@
+require 'newrelic_rpm'
+NewRelic::Agent.manual_start
 require 'yaml'
 require 'cf-runtime'
 require 'sinatra'
