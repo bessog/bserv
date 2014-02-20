@@ -1,6 +1,6 @@
 type: #default banner type
 site: #default site: www.example.com
-city: #default city
+city: #default city: !ruby/regexp /defaultcity/i
 gaaccount: #google analytics account: UA-XXXXXXX-YY
 gbfallback: #query to retrieve default fallback banner
   #fieldnameone: data or regex

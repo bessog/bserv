@@ -98,7 +98,7 @@ class BServApp < Sinatra::Base
     end
 
     if defaultbanner then
-      query["fields.city"] = defaults['city']
+      query["fields.city"] = defaults["city"]
 
       if @debug then begin_2qt = Time.now end
       row = coll.find(query).to_a
