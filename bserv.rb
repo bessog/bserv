@@ -125,6 +125,7 @@ class BServApp < Sinatra::Base
     if @debug then 
       end_t = Time.now
       @show["fields: "] = fields['title']
+      @show["whole row: "] = @show["banner"]
       @show["Banner generated in "] = " #{(end_t - begin_t)*1000} milliseconds"
     end
 
@@ -135,7 +136,7 @@ m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
 })(window,document,\'script\',\'//www.google-analytics.com/analytics.js\',\'gaPiAd\');
 gaPiAd(\'create\', \'" + defaults['gaaccount'] + "\', \'none\');
 gaPiAd(\'send\', \'event\', \'Impression\', \'" + @show["banner"]["adname"] + "\', location.href);
-var gaPiAdClick_" + fields['class_id'].to_s + " = function() { gaPiAd(\'send\', \'event\', \'Click\', \'" + @show["banner"]["adname"] + "\', location.href) };
+var gaPiAdClick_" + @show["banner"]["_id"].to_s + " = function() { gaPiAd(\'send\', \'event\', \'Click\', \'" + @show["banner"]["adname"] + "\', location.href) };
 "
 
     if !@debug && !@test then headers['Content-Type'] = 'application/javascript' end
@@ -162,6 +163,7 @@ for(i=0; i<gapiAds.length; i++) {
     end
 
 =begin
+# NOTE
 # async banner loader
 <div class='PivotalAdBannerDiv'></div>
 <script>
