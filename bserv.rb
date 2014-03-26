@@ -107,24 +107,47 @@ class BServApp < Sinatra::Base
         @show["2nd query time"] = "time #{(end_2qt - begin_2qt)*1000} milliseconds"
       end
     end
-    @show["banner"] = row[rand(row.length-1)]
-
+    
+    query = {
+        "end_date" => { "$gt" => Time.now.utc },
+        "active" => true,
+        "type" => "Generic"
+    }
+    genrow = coll.find(query).to_a
+    
+    resBanner = [genrow, row].flatten
+    
+    rando = rand(resBanner.length)
+    
+    if @debug then 
+      @show["resBanner: "] = resBanner
+      @show["resBanner.length: "] = resBanner.length
+      @show["rando: "] = rando
+    end
+    
+    @show["banner"] = resBanner[rando]
+    
     if @show["banner"] then
-      fields = @show["banner"]["fields"]
+      if @show["banner"]["fields"] then
+        fields = @show["banner"]["fields"]
+      end
     else
-
       fbquery = {}
       defaults["gbfallback"].each do |k,v|
         fbquery[k] = v.to_s
       end
       row = coll.find(fbquery).to_a
       @show["banner"] = row[0]
-      fields = @show["banner"]["fields"]
+      if @show["banner"]["fields"] then
+        fields = @show["banner"]["fields"]
+      end
     end
 
     if @debug then 
       end_t = Time.now
-      @show["fields: "] = fields['title']
+      if fields then
+        @show["fields: "] = fields['title']
+      end
       @show["whole row: "] = @show["banner"]
       @show["Banner generated in "] = " #{(end_t - begin_t)*1000} milliseconds"
     end
