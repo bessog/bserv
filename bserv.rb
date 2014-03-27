@@ -59,8 +59,6 @@ class BServApp < Sinatra::Base
         query[k] = v
       end
     end
-    
-    @show["css"] = site["css"]
 
     coll = db.collection("Banners")
 
@@ -142,6 +140,8 @@ class BServApp < Sinatra::Base
         fields = @show["banner"]["fields"]
       end
     end
+    
+    @show["css"] = site["styles"][@show["banner"]["type"]]
 
     if @debug then 
       end_t = Time.now
