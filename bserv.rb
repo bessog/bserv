@@ -54,9 +54,11 @@ class BServApp < Sinatra::Base
 
     site = coll.find_one({"site" => paramsite})
 
-    if site["filter"] then
-      YAML.load(site["filter"]).each do |k,v|
-        query[k] = v
+    if site["filters"] then
+      if site["filters"][defaults['type']] then
+        YAML.load(site["filters"][defaults['type']]).each do |k,v|
+          query[k] = v
+        end
       end
     end
 
@@ -111,6 +113,15 @@ class BServApp < Sinatra::Base
         "active" => true,
         "type" => "Generic"
     }
+
+    if site["filters"] then
+      if site["filters"]["Generic"] then
+        YAML.load(site["filters"]["Generic"]).each do |k,v|
+          query[k] = v
+        end
+      end
+    end
+
     genrow = coll.find(query).to_a
     
     resBanner = [genrow, row].flatten
