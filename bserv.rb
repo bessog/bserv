@@ -54,6 +54,10 @@ class BServApp < Sinatra::Base
 
     site = coll.find_one({"site" => paramsite})
 
+    if site.nil? then
+      not_found { erb :error404 }
+    end
+
     if site["filters"] then
       if site["filters"][defaults['type']] then
         YAML.load(site["filters"][defaults['type']]).each do |k,v|
