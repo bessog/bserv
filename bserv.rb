@@ -79,9 +79,9 @@ class BServApp < Sinatra::Base
               rl.longitude,
               rl.latitude
             ]
-          }
-        },
-        "$maxDistance" => 200000
+          },
+          "$maxDistance" => 200000
+        }
       }
 
       if @debug then
